@@ -30,4 +30,44 @@ jobs:
           fetch-depth: 0
 
       - name: "🔧 Setup Rust"
-        uses
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: "🛠️ Build Project"
+        run: cargo build --release
+
+      - name: "📦 Collect Executable (cross-platform)"
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ -f target/release/scala_like_rust ]; then
+            cp target/release/scala_like_rust dist/
+          elif [ -f target/release/scala_like_rust.exe ]; then
+            cp target/release/scala_like_rust.exe dist/
+          else
+            echo "⚠️ Binary not found."
+            exit 1
+          fi
+
+      - name: "🧾 Generate ProofLedger"
+        shell: bash
+        run: |
+          echo "🧾 Generating ProofLedger..."
+          cd dist
+          sha256sum scala_like_rust* > PROOF_LEDGER.txt 2>/dev/null || shasum -a 256 scala_like_rust* > PROOF_LEDGER.txt
+          echo "Commit: $GITHUB_SHA" >> PROOF_LEDGER.txt
+          date -u +"Build UTC: %Y-%m-%dT%H:%M:%SZ" >> PROOF_LEDGER.txt
+          cat PROOF_LEDGER.txt
+
+      - name: "🚀 Release (Auto)"
+        uses: softprops/action-gh-release@v1
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Scala-like-Rust Release #${{ github.run_number }}"
+          body: |
+            🦀 Scala-like-Rust — Fusion Edition  
+            - ✅ 3OS Build (Linux / macOS / Windows)  
+            - 🧾 ProofLedger with commit SHA + UTC timestamp  
+            - 🧩 Functional + Object semantics  
+          files: |
+            dist/**
