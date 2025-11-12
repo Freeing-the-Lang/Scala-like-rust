@@ -1,0 +1,10 @@
+[package]
+name = "scala_like_rust"
+version = "0.1.0"
+edition = "2021"
+authors = ["0200134"]
+license = "MIT"
+description = "Functional + Object Fusion Experiment — Scala semantics interpreted through Rust"
+repository = "https://github.com/Freeing-the-Lang/Scala-like-rust"
+
+[dependencies]
