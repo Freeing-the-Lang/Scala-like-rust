@@ -1,0 +1,33 @@
+name: "🦀 Scala-like-Rust — Fusion Build (v1.0 / Full 3OS)"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [ closed ]
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scala-like-rust-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-3os:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: "🧭 Checkout Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "🔧 Setup Rust"
+        uses
