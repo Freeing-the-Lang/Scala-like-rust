@@ -1,8 +1,8 @@
-name: "🦀 Scala-like-Rust — Fusion Build (v1.0 / Full 3OS)"
+name: "🦀 Scala-like-Rust — Fusion Build (v2.0 / Open Branch + Auto Contributor Update)"
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "**" ]  # 모든 브랜치 허용 (브랜치 개방)
   pull_request:
     types: [ closed ]
   schedule:
@@ -14,10 +14,11 @@ permissions:
 
 concurrency:
   group: scala-like-rust-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false  # 여러 브랜치 빌드 허용
 
 jobs:
   build-3os:
+    name: "Build & Release (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -35,7 +36,7 @@ jobs:
       - name: "🛠️ Build Project"
         run: cargo build --release
 
-      - name: "📦 Collect Executable (cross-platform)"
+      - name: "📦 Collect Executable"
         shell: bash
         run: |
           mkdir -p dist
@@ -58,16 +59,39 @@ jobs:
           date -u +"Build UTC: %Y-%m-%dT%H:%M:%SZ" >> PROOF_LEDGER.txt
           cat PROOF_LEDGER.txt
 
-      - name: "🚀 Release (Auto)"
+      - name: "📖 Update README Contributors"
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/')
+        shell: bash
+        run: |
+          echo "📖 Updating README.md..."
+          CONTRIBUTORS=$(git shortlog -sn --no-merges | awk '{$1=""; print substr($0,2)}')
+          echo "## 👥 Contributors" > CONTRIBUTORS.md
+          echo "$CONTRIBUTORS" >> CONTRIBUTORS.md
+          if grep -q "## 👥 Contributors" README.md; then
+            awk '/## 👥 Contributors/{exit}1' README.md > TMP_README.md
+            cat CONTRIBUTORS.md >> TMP_README.md
+            mv TMP_README.md README.md
+          else
+            echo -e "\n## 👥 Contributors\n$CONTRIBUTORS" >> README.md
+          fi
+          rm -f CONTRIBUTORS.md
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add README.md
+          git commit -m "🤝 Update contributor list [skip ci]" || echo "No changes."
+          git push || echo "Push skipped (no token)."
+
+      - name: "🚀 Release (Auto for main)"
         uses: softprops/action-gh-release@v1
         if: github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.${{ github.run_number }}
+          tag_name: v2.0.${{ github.run_number }}
           name: "Scala-like-Rust Release #${{ github.run_number }}"
           body: |
-            🦀 Scala-like-Rust — Fusion Edition  
-            - ✅ 3OS Build (Linux / macOS / Windows)  
-            - 🧾 ProofLedger with commit SHA + UTC timestamp  
-            - 🧩 Functional + Object semantics  
+            🦀 Scala-like-Rust — Open Branch Edition  
+            - ✅ Multi-branch build support  
+            - 🧾 ProofLedger (SHA + Commit + UTC)  
+            - 👥 Auto-updated README contributor list  
+            - 💻 Full 3OS support  
           files: |
             dist/**
